@@ -1,13 +1,9 @@
 import express from "express";
+import { createReview, getAllReviews } from "../controllers/review.controller.js";
 
 const router = express.Router();
 
-router.get("/", (_, res) => {
-    res.status(200).send("Reviews here!");
-});
-
-router.post("/a", (_, res) => {
-    res.status(201).json({message: "Review added successfully!"});
-});
+router.get("/", getAllReviews);
+router.post("/", createReview);
 
 export default router;
