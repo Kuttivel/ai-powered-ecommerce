@@ -1,6 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import { connectDataBase } from "./config/database.js";
+import reviewRoutes from "./routes/review.route.js"
 
 
 dotenv.config();
@@ -11,9 +12,7 @@ const PORT = process.env.PORT || 5000;
 
 connectDataBase();
 
-app.use("/api/reviews", (_, res) => {
-    res.status(200).send("Fake review detector.");
-});
+app.use("/api/reviews", reviewRoutes);
 
 
 app.listen(PORT, () => {
