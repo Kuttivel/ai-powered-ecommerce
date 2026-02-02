@@ -1,7 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import { connectDataBase } from "./config/database.js";
-import reviewRoutes from "./routes/review.route.js"
+import reviewRoutes from "./routes/review.route.js";
 
 
 dotenv.config();
@@ -11,6 +11,8 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 connectDataBase();
+
+app.use(express.json());
 
 app.use("/api/reviews", reviewRoutes);
 

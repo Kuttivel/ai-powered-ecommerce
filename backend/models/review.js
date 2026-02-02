@@ -34,7 +34,7 @@ const reviewSchema = new mongoose.Schema(
             type: Number,
             default: null,
         },
-        detationType: {
+        detectionType: {
             type: String,
             enum: ["NLP", "BEHAVIOURAL", "HYBRID"],
             default: null,
