@@ -4,11 +4,11 @@ const reviewSchema = new mongoose.Schema(
     {
         reviewerId: {
             type: String,
-            required: true,
+            default: "DATASET_USER",
         },
         productId: {
             type: String,
-            required: true,
+            default: "DATASET_PRODUCT",
         },
         reviewText: {
             type: String,
@@ -16,13 +16,13 @@ const reviewSchema = new mongoose.Schema(
         },
         rating: {
             type: Number,
-            required: true,
+            default: null,
             min: 1,
             max: 5,
         },
         reviewDate: {
             type: Date,
-            required: true,
+            default: Date.now,
         },
 
         // AI prediction results:
