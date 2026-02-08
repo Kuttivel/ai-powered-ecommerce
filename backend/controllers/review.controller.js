@@ -1,4 +1,5 @@
 import Review from "../models/Review.js";
+import axios from "axios";
 
 export async function getAllReviews(_, res) {
     try {
@@ -15,15 +16,22 @@ export async function getAllReviews(_, res) {
 
 export async function createReview(req, res) {
     try {
-        const {reviewerId, productId, reviewText, rating, reviewDate} = req.body;
+        const {reviewerId, productId, reviewText, rating} = req.body;
         const newReview = new Review({reviewerId, 
-                                    productId, 
-                                    reviewText,
-                                    rating, 
-                                    reviewDate});
+                                      productId, 
+                                      reviewText,
+                                      rating});
         
         const savedReview = await newReview.save();
-        res.status(201).json({ message: "Review added successfully.", 
+
+        const aiResponse = await axios.post("http://127.0.0.1:5000/predict-review",{reviewText});
+
+        savedReview.isFake = aiResponse.data.prediction === "FAKE";
+        savedReview.confidenceScore = aiResponse.data.confidence;
+
+        await savedReview.save();
+
+        res.status(201).json({ message: "Review added successfully & analysed.", 
                                added_review: savedReview })
     } catch (error) {
         

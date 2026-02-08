@@ -14,6 +14,7 @@ const reviewSchema = new mongoose.Schema(
             type: String,
             required: true,
         },
+        
         rating: {
             type: Number,
             default: null,
@@ -34,10 +35,9 @@ const reviewSchema = new mongoose.Schema(
             type: Number,
             default: null,
         },
-        detectionType: {
+        aiModel: {
             type: String,
-            enum: ["NLP", "BEHAVIOURAL", "HYBRID"],
-            default: null,
+            default: "LogisticRegression"
         },
     },
 
