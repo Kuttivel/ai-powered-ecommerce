@@ -1,8 +1,8 @@
 import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
-import Review from "../models/Review.js";
-import { connectDataBase } from "../config/database.js";
+import Review from "../backend/models/Review.js";
+import { connectDataBase } from "../backend/config/database.js";
 
 dotenv.config({ path: path.resolve(process.cwd(), "../../.env") });
 
