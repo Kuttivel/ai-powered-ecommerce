@@ -17,22 +17,25 @@ export async function getAllReviews(_, res) {
 export async function createReview(req, res) {
     try {
         const {reviewerId, productId, reviewText, rating} = req.body;
-        const newReview = new Review({reviewerId, 
-                                      productId, 
-                                      reviewText,
-                                      rating});
-        
-        const savedReview = await newReview.save();
 
-        const aiResponse = await axios.post("http://127.0.0.1:5000/predict-review",{reviewText});
+        if(!reviewText) {
+            return res.status(400).json({ message: "Review text is required" });
+        }
 
-        savedReview.isFake = aiResponse.data.prediction === "FAKE";
-        savedReview.confidenceScore = aiResponse.data.confidence;
+        const aiResponse = await axios.post("http://localhost:5001/predict", {reviewText});
 
-        await savedReview.save();
+        const { isFake, confidenceScore } = aiResponse.data;
+
+        const newReview = await Review.create({reviewerId,
+                                               productId,   
+                                               reviewText,
+                                               rating,
+                                               isFake,
+                                               confidenceScore,
+                                               aiModel: "LogisticRegression"});
 
         res.status(201).json({ message: "Review added successfully & analysed.", 
-                               added_review: savedReview })
+                               added_review: newReview })
     } catch (error) {
         
         console.error(`Error in createReview controller ${error}`);

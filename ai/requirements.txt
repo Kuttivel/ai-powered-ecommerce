@@ -1,6 +1,7 @@
+flask
+flask-cors
+pymongo
 python-dotenv
-numpy
 pandas
 scikit-learn
-pymongo
-flask
+numpy

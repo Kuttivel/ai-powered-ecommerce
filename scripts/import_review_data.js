@@ -4,67 +4,113 @@ import dotenv from "dotenv";
 import Review from "../backend/models/Review.js";
 import { connectDataBase } from "../backend/config/database.js";
 
-dotenv.config({ path: path.resolve(process.cwd(), "../../.env") });
+dotenv.config({path: path.resolve(process.cwd(), "../.env")});
 
-function readTextFiles(folderPath, isFakeReview) {
+function clean_POS_text(text) {
+
+    const words = [];
+
+    const tokens = text.split(/\s+/);
+
+    for (let token of tokens) {
+
+        if (token.includes("__")) {
+            token = token.split("__").pop();
+        }
+        if (token.includes("/")) {
+            token = token.substring(0, token.lastIndexOf("/"));
+        }
+        if (token.match(/^-(LRB|RRB|LSB|RSB)-$/)) {
+            continue;
+        }
+        if (/^[a-zA-Z]+$/.test(token)) {
+            words.push(token);
+        }
+    }
+    const cleaned_words = words.filter((word, index) => {
+        return index === 0 || word.toLowerCase() !== words[index - 1].toLowerCase();
+    });
+
+    return cleaned_words.join(" ");
+} /* 
+        clean_POS_text()'s written in order to convert,
+            POS tagged text (Part Of Speech) -> readable text.
+  */
+
+
+function read_txt_files(target_folder_path, isFakeReview) {
     const reviews = [];
-    const folders = fs.readdirSync(folderPath);
+    const folder = fs.readdirSync(target_folder_path);
 
-    for(const folder of folders) {
-        const foldPath = path.join(folderPath, folder);
-        const files = fs.readdirSync(foldPath);
+    for(const fold of folder) {
+        const full_folder_path = path.join(target_folder_path, fold);
+        const txt_files = fs.readdirSync(full_folder_path);
 
-        for(const file of files) {
-            if(!file.endsWith(".txt"))
+        for(const txt_file of txt_files) {
+            if(!txt_file.endsWith(".txt")) {
                 continue;
+            }
 
-            const filePath = path.join(foldPath, file);
-            const reviewText = fs.readFileSync(filePath, "utf8").trim();
+            const file_path = path.join(full_folder_path, txt_file);
+            let reviewText = fs.readFileSync(file_path, "utf8");
 
-            if(reviewText.length === 0)
+            if(!reviewText || reviewText.trim().length === 0) {
                 continue;
+            }
+
+            let cleaned_reviewText = clean_POS_text(reviewText);
 
             reviews.push({
-                reviewText: reviewText,
-                isFake: isFakeReview
+                reviewerId: "P11-1032 Dataset_USER",
+                productId: "P11-1032 Dataset_PRODUCT",
+                reviewText: cleaned_reviewText,
+                rating: null,
+                isFake: isFakeReview,
+                confidenceScore: null,
+                aiModel: "LogisticRegression"
             });
         }
     }
 
     return reviews;
+
 }
 
-async function importReviewData() {
+export async function import_review_data() {
     try {
-        console.log("Connecting to MONGODB.....");
         await connectDataBase();
 
-        const projectRoot = path.resolve(process.cwd(), "../../");
+        await Review.deleteMany({});
+        console.log("Existing reviews deleted successfully from MONGODB.");
 
-        const datasetPath = path.join(projectRoot,
-                                      "datasets",
-                                      "reviews",
-                                      "P11-1032-Datasets");
-        
-        const mturkPath = path.join(datasetPath, "MTurk");
-        const tripAdvisorPath = path.join(datasetPath, "TripAdvisor");
+        const projectRoot = path.resolve(process.cwd(), "../");
 
-        console.log("Reading deceptive reviews..");
-        const fakeReviews = readTextFiles(mturkPath, true);
+        const dataset_path = path.join(projectRoot, 
+                                       "datasets", 
+                                       "reviews", 
+                                       "P11-1032-Datasets");
 
-        console.log("Reading truthfull reviews..");
-        const realReview = readTextFiles(tripAdvisorPath, false);
+        const mTurk_folder = path.join(dataset_path, "MTurk");
+        const tripAdvisor_folder = path.join(dataset_path, "TripAdvisor");
 
-        const allReviews = [...fakeReviews, ...realReview];
+        console.log("Reading deceptive reviews. .. ...");
+        const fakeReviews = read_txt_files(mTurk_folder, true);
 
-        console.log(`Importing ${allReviews.length} reviews to MONGODB`);
+        console.log("Reading truthful reviews. .. ...");
+        const trueReviews = read_txt_files(tripAdvisor_folder, false);
+
+        const allReviews = [...fakeReviews, ...trueReviews];
+        console.log(`Importing ${allReviews.length} reviews.`);
+
         await Review.insertMany(allReviews);
+        console.log("Data imported successfully.");
+
         process.exit(0);
     } 
     catch (error) {
-        console.error("Error importing reviews to MONGODB", error.message);
+        console.error("Error importing data:", error.message);
         process.exit(1);
     }
 }
 
-importReviewData();
+import_review_data();
