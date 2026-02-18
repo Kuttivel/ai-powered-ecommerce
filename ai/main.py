@@ -5,7 +5,6 @@ import pickle
 app = Flask(__name__)
 CORS(app)
 
-# Load model
 with open("fake_review_model.pkl", "rb") as f:
     model = pickle.load(f)
 

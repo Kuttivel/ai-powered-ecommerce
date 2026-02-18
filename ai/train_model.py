@@ -18,7 +18,10 @@ collection = db["reviews"]
 
 print("Connected to MongoDB")
 
-data = list(collection.find({}, {"reviewText": 1, "isFake": 1, "_id": 0}))
+data = list(collection.find({}, 
+                            {"reviewText": 1, 
+                             "isFake": 1, 
+                             "_id": 0}))
 df = pd.DataFrame(data)
 
 if df.empty:
@@ -27,9 +30,10 @@ if df.empty:
 X = df["reviewText"]
 y = df["isFake"].astype(int)
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
-)
+X_train, X_test, y_train, y_test = train_test_split(X, 
+                                                    y, 
+                                                    test_size=0.2, 
+                                                    random_state=42)
 
 vectorizer = TfidfVectorizer(stop_words="english", max_features=5000)
 
@@ -44,7 +48,7 @@ predictions = model.predict(X_test_vec)
 accuracy = accuracy_score(y_test, predictions)
 print(f"Accuracy: {accuracy * 100:.2f}%")
 
-# Save model
+
 with open("fake_review_model.pkl", "wb") as f:
     pickle.dump(model, f)
 
