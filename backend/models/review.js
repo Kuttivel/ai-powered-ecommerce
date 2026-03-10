@@ -4,26 +4,24 @@ const reviewSchema = new mongoose.Schema(
     {
         reviewerId: {
             type: String,
-            default: "DATASET_USER",
+            default: "_uel",
         },
         productId: {
             type: String,
-            default: "DATASET_PRODUCT",
+            default: "test_product",
         },
         reviewText: {
             type: String,
             required: true,
         },
-        
         rating: {
             type: Number,
-            default: null,
+            required: true,
             min: 1,
             max: 5,
         },
         reviewDate: {
             type: Date,
-            default: Date.now,
         },
 
         // AI prediction results:
@@ -35,9 +33,25 @@ const reviewSchema = new mongoose.Schema(
             type: Number,
             default: null,
         },
-        aiModel: {
+        aiPredictionCode: {
+            type: Number,
+            default: null,
+        },
+        aiPredictionLabel: {
             type: String,
-            default: "LogisticRegression"
+            default: null,
+        },
+        probFake: { 
+            type: Number, 
+            default: null 
+        },
+        probReal: { 
+            type: Number, 
+            default: null 
+        },
+        predictedAt: { 
+            type: Date, 
+            default: null 
         },
     },
 
