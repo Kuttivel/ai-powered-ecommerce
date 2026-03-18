@@ -3,7 +3,7 @@ numpy
 pandas
 scikit-learn
 nltk
-
+scipy
 pymongo
 python-dotenv
 joblib

@@ -4,8 +4,8 @@ import pandas as pd
 import re
 from datetime import datetime, UTC
 
-CURRENT_FILE_PATH = os.path.dirname(__file__)
-sys.path.append(os.path.abspath(os.path.join(CURRENT_FILE_PATH, "../..")))
+this_file_path = os.path.dirname(__file__)
+sys.path.append(os.path.abspath(os.path.join(this_file_path, "../..")))
 
 from config.settings import load_settings
 from config.database import get_mongo
@@ -110,9 +110,9 @@ def main():
     skipped_rows = 0
     product_docs = []
 
-    print("Deleting old products from MongoDB...")
+    print("\nDeleting old products from MongoDB...")
     delete_result = products_col.delete_many({})
-    print("Old products deleted:", delete_result.deleted_count)
+    print("\nOld products deleted:", delete_result.deleted_count)
 
     for _, row in df.iterrows():
         total_rows += 1
@@ -170,10 +170,10 @@ def main():
     if len(product_docs) > 0:
         products_col.insert_many(product_docs)
 
-    print("Total rows in CSV:", total_rows)
-    print("Products inserted:", cleaned_rows)
-    print("Skipped rows:", skipped_rows)
-    print("Collection:", settings["MONGO_COLLECTION_PRODUCTS"])
+    print("\n-Total rows in CSV:", total_rows)
+    print("\n-Products inserted:", cleaned_rows)
+    print("\n-Skipped rows:", skipped_rows)
+    print("\n-Collection:", settings["MONGO_COLLECTION_PRODUCTS"])
 
 
 if __name__ == "__main__":

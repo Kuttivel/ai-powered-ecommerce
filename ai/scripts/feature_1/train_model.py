@@ -7,14 +7,12 @@ from scipy.sparse import csr_matrix, hstack
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import accuracy_score, classification_report, precision_score, recall_score, f1_score, confusion_matrix
 
-# clarify path for to fetch utils/nlp.py
+this_file_path = os.path.dirname(__file__)
+sys.path.append(os.path.abspath(os.path.join(this_file_path, "../..")))
 
-CURRENT_FILE_PATH = os.path.dirname(__file__)
-sys.path.insert(0, os.path.abspath(os.path.join(CURRENT_FILE_PATH, "../..")))
-
-from utils.nlp import clean_and_stem_text
+from nlp import clean_and_stem_text
 
 
 # Importing pre-fixed paths via settings.py from /config.
@@ -26,6 +24,7 @@ dataset_path = settings["FEATURE_1_DATASET_PATH"]
 model_path = settings["FEATURE_1_MODEL_PATH"]
 vectorizer_path = settings["FEATURE_1_VECTORIZER_PATH"]
 metrics_path = settings["FEATURE_1_METRICS_PATH"]
+
 
 
 def main():
@@ -42,7 +41,8 @@ def main():
     # print(df.head())
     # print(df.isnull().sum())  # No missing values in all 4 columns.
     
-    
+    df = df.dropna(subset=["rating", "text_", "label"])
+
     df["text_"] = df["text_"].apply(clean_and_stem_text)
     # print(df["text_"])
 
@@ -59,57 +59,53 @@ def main():
                                                                     # "OR" - Original review
                                                                     # I used "lambda function" to assign '1' for "CG" and '0' for "OR".
 
-    X_text = df["text_"].values
-    X_rating = df["rating"].values
-    Y = df["label"].values
+    x_text = df["text_"].values
+    x_rating = df["rating"].values
+    y = df["label"].values
     # print(X_text)
     # print(X_rating)
     # print(Y)
     
-    X_text_train, X_text_test, X_rating_train, X_rating_test, Y_train, Y_test = train_test_split(X_text,
-                                                                                                  X_rating,
-                                                                                                  Y,
-                                                                                                  test_size=0.2,
-                                                                                                  random_state=2,
-                                                                                                  stratify=Y)
-
-
+    x_text_train, x_text_test, x_rating_train, x_rating_test, y_train, y_test = train_test_split(
+        x_text,
+        x_rating,
+        y,
+        test_size=0.2,
+        random_state=42,
+        stratify=y,
+    )
     # TF-IDF vectorizer:
 
     vectorizer = TfidfVectorizer(ngram_range=(1, 2),  # used unigrams + bigrams (1,2) to capture short phrases.
-                                 max_features=50000)  # max_features limits vocabulary size to control memory/time.
-    X_text_train_vec = vectorizer.fit_transform(X_text_train)
-    X_text_test_vec = vectorizer.transform(X_text_test)
+                                 max_features=30000,  # max_features limits vocabulary size to control memory/time.
+                                 min_df=2,
+                                 sublinear_tf=True)
+      
+    x_text_train_vec = vectorizer.fit_transform(x_text_train)
+    x_text_test_vec = vectorizer.transform(x_text_test)
 
+    x_rating_train_vec = csr_matrix(x_rating_train.reshape(-1, 1))
+    x_rating_test_vec = csr_matrix(x_rating_test.reshape(-1, 1))
 
-    # Convert rating into sparse matrix and combine with text features:
-
-    X_rating_train_vec = csr_matrix(X_rating_train.reshape(-1, 1))
-    X_rating_test_vec = csr_matrix(X_rating_test.reshape(-1, 1))
-
-    X_train_vec = hstack([X_text_train_vec, X_rating_train_vec])
-    X_test_vec = hstack([X_text_test_vec, X_rating_test_vec])
-
+    x_train_vec = hstack([x_text_train_vec, x_rating_train_vec])
+    x_test_vec = hstack([x_text_test_vec, x_rating_test_vec])
 
 
     # Model: Logistic regression
 
-    model = LogisticRegression(max_iter=2000)
-    model.fit(X_train_vec, Y_train)
+    model = LogisticRegression(max_iter=1500)
+    model.fit(x_train_vec, y_train)
 
 
     # Evaluation - [Acccuracy score, Classification report]
 
-    train_pred = model.predict(X_train_vec)
-    test_pred = model.predict(X_test_vec)
+    y_pred = model.predict(x_test_vec)
 
-    train_acc = accuracy_score(Y_train, train_pred)
-    test_acc = accuracy_score(Y_test, test_pred)
-    
-    report = classification_report(Y_test, test_pred, output_dict=True)
-
-    print("\n - Training Accuracy:", train_acc)
-    print("\n - Test Accuracy:", test_acc)    
+    accuracy = accuracy_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred, zero_division=0)
+    recall = recall_score(y_test, y_pred, zero_division=0)
+    f1 = f1_score(y_test, y_pred, zero_division=0)
+    matrix = confusion_matrix(y_test, y_pred).tolist()
 
 
     # Save the trained model as pickle file  in './models/feature_1/'
@@ -129,16 +125,18 @@ def main():
     # Save the training metrics as json file  in './models/feature_1/'
     
     metrics = {
-        "train_accuracy": train_acc,
-        "test_accuracy": test_acc,
+        "accuracy": accuracy,
+        "precision": precision,
+        "recall": recall,
+        "f1_score": f1,
+        "confusion_matrix": matrix,
         "rating_used": True,
-        "classification_report": report
     }
 
     with open(metrics_path, "w", encoding="utf-8") as metrics_file:
         json.dump(metrics, metrics_file, indent=4)
     
-    print("\n - 'training_metrics.json' successfully in ./models/feature_1/")
+    print("\n - 'training_metrics.json' successfully in ./evaluations/feature_1/")
     print("\n")
 
 if __name__ == "__main__":

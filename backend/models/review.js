@@ -41,17 +41,21 @@ const reviewSchema = new mongoose.Schema(
             type: String,
             default: null,
         },
-        probFake: { 
-            type: Number, 
-            default: null 
+        probFake: {
+            type: Number,
+            default: null,
         },
-        probReal: { 
-            type: Number, 
-            default: null 
+        probReal: {
+            type: Number,
+            default: null,
         },
-        predictedAt: { 
-            type: Date, 
-            default: null 
+        predictedAt: {
+            type: Date,
+            default: null,
+        },
+        moderationStatus: {
+            type: String,
+            default: "pending",
         },
     },
 
@@ -60,6 +64,6 @@ const reviewSchema = new mongoose.Schema(
     }
 );
 
-const Review = mongoose.model("Review", reviewSchema);
+const Review = mongoose.models.Review || mongoose.model("Review", reviewSchema);
 
 export default Review;

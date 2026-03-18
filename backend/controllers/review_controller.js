@@ -3,80 +3,122 @@ import Review from "../models/Review.js";
 
 const AI_URL = process.env.AI_URL || "http://localhost:5001";
 
-
-export async function getAllReviews(_, res) {
+export async function getAllReviews(req, res) {
     try {
-        const reviews = await Review.find();
-        res.status(200).json(reviews);
-    } 
+        const query = {};
+
+        if (req.query.productId) {
+            query.productId = String(req.query.productId);
+        }
+
+        const reviews = await Review.find(query).sort({ createdAt: -1 }).lean();
+        res.status(200).json({ reviews });
+    }
     catch (error) {
-        console.error(`Error in getAllReviews controller ${error}`);
-        res.status(500).json({ message: "Internal server error" });
+        console.error("Error in getAllReviews controller", error.message);
+        res.status(500).json({ message: "Internal server error." });
     }
 }
 
 export async function createReview(req, res) {
-try {
-    const {reviewerId, productId, reviewText, rating, reviewDate} = req.body;
-
-    switch(true) {
-        case (typeof reviewText !== "string"):
-            return res.status(400).json({ message: "reviewText must be a string (non-integer)." });
-        
-        case (reviewText.trim() === ""): 
-            return res.status(400).json({ message: "reviewText is required." });
-
-        case (rating === undefined || rating === null):
-            return res.status(400).json({ message: "rating is required." });
-
-        case (Number.isNaN(rating) || !Number.isInteger(rating)):
-            return res.status(400).json({ message: "rating must be an integer." });
-
-        case (rating < 1 || rating > 5):
-            return res.status(400).json({ message: "rating must be between 1 and 5." });
-    }
-
-
-    const newReview = new Review({reviewerId: reviewerId, 
-                                  productId: productId, 
-                                  reviewText: reviewText,
-                                  rating: rating, 
-                                  reviewDate: reviewDate});
-    
     try {
-        const aiResponse = await axios.post(`${AI_URL}/api/feature-1/predict`, {review_text: reviewText, rating: rating});
-        
-        const aiData = aiResponse.data;
+        const { reviewerId, productId, reviewText, rating, reviewDate } = req.body;
+        const numericRating = Number(rating);
 
-        const predictionCode = Number(aiData.prediction_code);
-        const predictionLabel = aiData.prediction_label;
-        const probFake = Number(aiData.prob_fake);
-        const probReal = Number(aiData.prob_real);
-        const confidenceScore = Number(aiData.confidence_score);
-
-        if (Number.isFinite(predictionCode)) {
-            newReview.aiPredictionCode = predictionCode;
-            newReview.aiPredictionLabel = predictionLabel;
-            newReview.isFake = predictionCode === 1;
-            newReview.predictedAt = new Date();
+        switch (true) {
+            case typeof productId !== "string" || productId.trim() === "":
+                return res.status(400).json({ message: "productId is required." });
+            case typeof reviewText !== "string":
+                return res.status(400).json({ message: "reviewText must be a string." });
+            case reviewText.trim() === "":
+                return res.status(400).json({ message: "reviewText is required." });
+            case rating === undefined || rating === null:
+                return res.status(400).json({ message: "rating is required." });
+            case Number.isNaN(numericRating) || !Number.isInteger(numericRating):
+                return res.status(400).json({ message: "rating must be an integer." });
+            case numericRating < 1 || numericRating > 5:
+                return res.status(400).json({ message: "rating must be between 1 and 5." });
         }
 
-        newReview.probFake = Number.isFinite(probFake) ? probFake : null;
-        newReview.probReal = Number.isFinite(probReal) ? probReal : null;
-        newReview.confidenceScore = Number.isFinite(confidenceScore) ? confidenceScore : null;
-    } 
-    catch (error) {
-        console.error(`AI microservice error in createReview controller ${error}`);
+        const newReview = new Review({
+            reviewerId: typeof reviewerId === "string" && reviewerId.trim() !== "" ? reviewerId.trim() : "User",
+            productId: productId.trim(),
+            reviewText: reviewText.trim(),
+            rating: numericRating,
+            reviewDate: reviewDate || new Date(),
+            moderationStatus: "pending",
+        });
+
+        try {
+            const ai_response = await axios.post(`${AI_URL}/api/feature-1/predict`, {
+                review_text: reviewText.trim(),
+                rating: numericRating,
+            });
+
+            const aiData = ai_response.data;
+            const prediction_code = Number(aiData.prediction_code);
+            const prob_fake = Number(aiData.prob_fake);
+            const prob_real = Number(aiData.prob_real);
+            const confidence_score = Number(aiData.confidence_score);
+
+            if (Number.isFinite(prediction_code)) {
+                newReview.aiPredictionCode = prediction_code;
+                newReview.aiPredictionLabel = aiData.prediction_label;
+                newReview.isFake = prediction_code === 1;
+                newReview.predictedAt = new Date();
+                newReview.moderationStatus = prediction_code === 1 ? "flagged_fake" : "approved";
+            }
+
+            newReview.probFake = Number.isFinite(prob_fake) ? prob_fake : null;
+            newReview.probReal = Number.isFinite(prob_real) ? prob_real : null;
+            newReview.confidenceScore = Number.isFinite(confidence_score) ? confidence_score : null;
+        }
+        catch (error) {
+            console.error("AI microservice error in createReview controller", error.message);
+            newReview.moderationStatus = "ai_unavailable";
+        }
+
+        const savedReview = await newReview.save();
+
+        res.status(201).json({
+            message: "Review added successfully.",
+            review: savedReview,
+            visibility: {
+                visible: isReviewVisible(savedReview),
+                rule: savedReview.isFake ? "Hidden from public reviews because it was flagged as fake." : "Visible in public reviews.",
+            },
+        });
     }
+    catch (error) {
+        console.error("Error in createReview controller", error.message);
+        res.status(500).json({ message: "Internal server error." });
+    }
+}
 
-    const savedReview = await newReview.save();
-    res.status(201).json({ 
-        message: "Review added successfully.",
-        review: savedReview,
-    })
+export async function getVisibleReviews(req, res) {
+    try {
+        const query = {
+            $or: [
+                { isFake: { $ne: true } },
+                { isFake: null },
+            ],
+        };
 
-} 
-catch (error) {
-    console.error(`Error in createReview controller ${error}`);
-    res.status(500).json({ message: "Internal server error" });
-}}
+        if (req.query.productId) {
+            query.productId = String(req.query.productId);
+        }
+
+        const reviews = await Review.find(query).sort({ createdAt: -1 }).lean();
+        const visibleReviews = reviews.filter((review) => isReviewVisible(review));
+
+        res.status(200).json({ reviews: visibleReviews });
+    }
+    catch (error) {
+        console.error("Error in getVisibleReviews controller", error.message);
+        res.status(500).json({ message: "Internal server error." });
+    }
+}
+
+function isReviewVisible(review) {
+    return review?.isFake !== true;
+}

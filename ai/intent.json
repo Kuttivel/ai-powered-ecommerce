@@ -1,0 +1,57 @@
+{
+    "greeting": {
+        "patterns": [
+            "hi",
+            "hello",
+            "hey",
+            "good morning",
+            "good afternoon",
+            "good evening",
+            "how are you"
+        ],
+        "responses": [
+            "Hello! How can I help you today?",
+            "Hi there! I can help you find products or answer simple shopping questions.",
+            "Hey! Tell me what kind of product you are looking for."
+        ]
+    },
+    "thanks": {
+        "patterns": [
+            "thanks",
+            "thank you",
+            "thankyou",
+            "thx"
+        ],
+        "responses": [
+            "You're welcome!",
+            "Happy to help!",
+            "No problem!"
+        ]
+    },
+    "goodbye": {
+        "patterns": [
+            "bye",
+            "goodbye",
+            "see you",
+            "see ya"
+        ],
+        "responses": [
+            "Goodbye! Have a great day.",
+            "See you later!",
+            "Bye! Come back anytime."
+        ]
+    },
+    "help": {
+        "patterns": [
+            "help",
+            "what can you do",
+            "how can you help",
+            "what do you do"
+        ],
+        "responses": [
+            "I can help you search for products by name, category, brand, or price range.",
+            "I can help you find products and show budget or premium options.",
+            "Try asking for a product, category, brand, or a budget range like under £20."
+        ]
+    }
+}

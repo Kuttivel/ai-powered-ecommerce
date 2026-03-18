@@ -1,0 +1,48 @@
+{
+    "train_accuracy": 0.942858182082712,
+    "validation_accuracy": 0.8870568837592745,
+    "test_accuracy": 0.8988500061827625,
+    "precision": 0.8743529411764706,
+    "recall": 0.91911946574326,
+    "f1_score": 0.8961774990956228,
+    "best_threshold": 0.44,
+    "best_validation_f1": 0.88654,
+    "confusion_matrix": [
+        [
+            3510,
+            534
+        ],
+        [
+            327,
+            3716
+        ]
+    ],
+    "classification_report": {
+        "0": {
+            "precision": 0.9147771696637998,
+            "recall": 0.8679525222551929,
+            "f1-score": 0.8907499048344119,
+            "support": 4044.0
+        },
+        "1": {
+            "precision": 0.8743529411764706,
+            "recall": 0.91911946574326,
+            "f1-score": 0.8961774990956228,
+            "support": 4043.0
+        },
+        "accuracy": 0.8935328304686534,
+        "macro avg": {
+            "precision": 0.8945650554201352,
+            "recall": 0.8935359939992265,
+            "f1-score": 0.8934637019650173,
+            "support": 8087.0
+        },
+        "weighted avg": {
+            "precision": 0.8945675547541582,
+            "recall": 0.8935328304686534,
+            "f1-score": 0.8934633663897571,
+            "support": 8087.0
+        }
+    },
+    "dataset_path": "../datasets/fake reviews dataset.csv"
+}
